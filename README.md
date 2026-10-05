@@ -28,10 +28,10 @@ The app has no login, so it listens on localhost only by default. Don't expose i
 - **Stories**: each story has its own timeline. When creating one, choose how time works:
   - *Calendar dates* (real or invented, with optional times), or
   - *Numbers* with a unit label (Day 3, Year 212, Chapter 7). Handy for fictional calendars.
-- **Events**: a title, notes, a start, an optional end, and an optional track.
-- **Tracks**: colour-coded groups, e.g. one per character, place or plot thread.
-- **Views**: a vertical *Timeline*, or *Swimlanes* with one column per track. Filter either by track.
-- "Save & add another" on the event form keeps the track and date filled in, for quickly entering a run of events.
+- **Events**: a title, notes, a start, an optional end, and an optional character.
+- **characters**: colour-coded event groups, e.g. one per character, place or plot thread.
+- **Views**: a vertical *Timeline*, or *Swimlanes* with one column per character. Filter either by character.
+- "Save & add another" on the event form keeps the character and date filled in, for quickly entering a run of events.
 
 ## Files
 

@@ -14,15 +14,16 @@
   <div class="chips" role="group" aria-label="View">
     {{range .ViewChips}}<a class="chip{{if .Active}} active{{end}}" href="{{.Href}}">{{.Label}}</a>{{end}}
   </div>
-  <div class="chips" role="group" aria-label="Filter by track">
-    {{range .TrackChips}}<a class="chip{{if .Active}} active{{end}}" href="{{.Href}}"{{if .Color}} style="--c: {{.Color}}"{{end}}>{{if .Color}}<i class="dot"></i>{{end}}{{.Label}}</a>{{end}}
+  <div class="chips" role="group" aria-label="Filter by character">
+    <input type="search" id="character-search" placeholder="Find a character..." aria-label="Search Character" style="width: 12rem; padding: 4px 12px; border-radius: 999px; font-size: .88rem">
+    {{range .CharacterChips}}<a class="chip{{if .Active}} active{{end}}" href="{{.Href}}"{{if .Color}} style="--c: {{.Color}}" data-character-name="{{.Label}}"{{end}}>{{if .Color}}<i class="dot"></i>{{end}}{{.Label}}</a>{{end}}
   </div>
 </div>
 
 {{if eq .Total 0}}
   <div class="empty">
     <p>No events yet.</p>
-    <p class="muted">Add your first event, and optionally create tracks below (one per character, place or plot thread) to colour-code them.</p>
+    <p class="muted">Add your first event, and optionally create character below (one per character, place or plot thread) to colour-code them.</p>
   </div>
 {{else if not .Events}}
   <div class="empty"><p class="muted">No events match this filter.</p></div>
@@ -33,7 +34,7 @@
       <div class="card">
         <div class="when">{{.When}}</div>
         <h3>{{.Title}}</h3>
-        {{if .TrackName}}<span class="tag"><i class="dot"></i>{{.TrackName}}</span>{{end}}
+        {{if .CharacterName}}<span class="tag"><i class="dot"></i>{{.CharacterName}}</span>{{end}}
         {{if .Notes}}<p class="notes">{{.Notes}}</p>{{end}}
         <div class="actions">
           <a href="/events/{{.ID}}/edit">Edit</a>
@@ -79,21 +80,21 @@
 {{end}}
 
 <details class="panel">
-  <summary>Tracks ({{len .Tracks}})</summary>
-  <p class="muted">Tracks group events by character, place or plot thread, and give each its own colour.</p>
-  {{range .Tracks}}
-  <form class="row" method="post" action="/tracks/{{.ID}}">
+  <summary>Characters ({{len .Characters}})</summary>
+  <p class="muted">Characters group events by character and give each its own colour.</p>
+  {{range .Character}}
+  <form class="row" data-character-name="{{.Name}}" method="post" action="/characters/{{.ID}}">
     <input type="color" name="color" value="{{.Color}}" aria-label="Colour for {{.Name}}">
-    <input name="name" value="{{.Name}}" required aria-label="Track name">
+    <input name="name" value="{{.Name}}" required aria-label="Character name">
     <span class="muted small">{{.Count}} event{{if ne .Count 1}}s{{end}}</span>
     <button class="btn" type="submit">Save</button>
-    <button class="btn danger" type="submit" formaction="/tracks/{{.ID}}/delete" formnovalidate data-confirm="Delete this track? Its events are kept and move to Unassigned.">Delete</button>
+    <button class="btn danger" type="submit" formaction="/characters/{{.ID}}/delete" formnovalidate data-confirm="Delete this character? Its events are kept and move to Unassigned.">Delete</button>
   </form>
   {{end}}
-  <form class="row" method="post" action="/stories/{{.Story.ID}}/tracks">
-    <input type="color" name="color" value="{{.NextColor}}" aria-label="Colour for new track">
-    <input name="name" placeholder="New track name" required aria-label="New track name">
-    <button class="btn primary" type="submit">Add track</button>
+  <form class="row" method="post" action="/stories/{{.Story.ID}}/characters">
+    <input type="color" name="color" value="{{.NextColor}}" aria-label="Colour for new characters">
+    <input name="name" placeholder="New character name" required aria-label="New character name">
+    <button class="btn primary" type="submit">Add character</button>
   </form>
 </details>
 
@@ -111,7 +112,7 @@
     <div class="buttons"><button class="btn primary" type="submit">Save settings</button></div>
   </form>
   <form method="post" action="/stories/{{.Story.ID}}/delete" class="danger-zone">
-    <button class="btn danger" type="submit" data-confirm="Delete this whole story, including all its events and tracks? This cannot be undone.">Delete story</button>
+    <button class="btn danger" type="submit" data-confirm="Delete this whole story, including all its events and characters? This cannot be undone.">Delete story</button>
   </form>
 </details>
 {{end}}

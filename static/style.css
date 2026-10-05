@@ -147,3 +147,5 @@ legend { font-weight: 600; font-size: .92rem; padding: 0 6px; }
   .grid2 { grid-template-columns: 1fr; }
   h1 { font-size: 1.5rem; }
 }
+
+[hidden] { display: none !important; }

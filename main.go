@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS stories (
 	unit        TEXT NOT NULL DEFAULT '',       -- label for number mode: Day, Year, Chapter...
 	created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE TABLE IF NOT EXISTS tracks (
+CREATE TABLE IF NOT EXISTS characters (
 	id       INTEGER PRIMARY KEY AUTOINCREMENT,
 	story_id INTEGER NOT NULL REFERENCES stories(id) ON DELETE CASCADE,
 	name     TEXT NOT NULL,
@@ -44,13 +44,13 @@ CREATE TABLE IF NOT EXISTS tracks (
 CREATE TABLE IF NOT EXISTS events (
 	id        INTEGER PRIMARY KEY AUTOINCREMENT,
 	story_id  INTEGER NOT NULL REFERENCES stories(id) ON DELETE CASCADE,
-	track_id  INTEGER REFERENCES tracks(id) ON DELETE SET NULL,
+	character_id  INTEGER REFERENCES characters(id) ON DELETE SET NULL,
 	title     TEXT NOT NULL,
 	notes     TEXT NOT NULL DEFAULT '',
 	starts_at TEXT NOT NULL,
 	ends_at   TEXT NOT NULL DEFAULT ''
 );
-CREATE INDEX IF NOT EXISTS idx_tracks_story ON tracks(story_id);
+CREATE INDEX IF NOT EXISTS idx_characters_story ON characters(story_id);
 CREATE INDEX IF NOT EXISTS idx_events_story ON events(story_id);
 `
 
@@ -76,7 +76,7 @@ type Story struct {
 
 func (s Story) IsDate() bool { return s.Mode != "number" }
 
-type Track struct {
+type Characters struct {
 	ID      int64
 	StoryID int64
 	Name    string
@@ -85,20 +85,20 @@ type Track struct {
 }
 
 type Event struct {
-	ID       int64
-	StoryID  int64
-	TrackID  sql.NullInt64
-	Title    string
-	Notes    string
-	StartsAt string
-	EndsAt   string
+	ID          int64
+	StoryID     int64
+	CharacterID sql.NullInt64
+	Title       string
+	Notes       string
+	StartsAt    string
+	EndsAt      string
 
 	// filled in by decorate()
-	key       float64
-	TrackName string
-	Color     string
-	Start     string
-	When      string
+	key           float64
+	CharacterName string
+	Color         string
+	Start         string
+	When          string
 }
 
 // ---------- time handling ----------
@@ -137,10 +137,10 @@ func joinTime(mode, date, clock string) string {
 	return date
 }
 
-func decorate(st Story, e *Event, tm map[int64]Track) {
-	if e.TrackID.Valid {
-		if t, ok := tm[e.TrackID.Int64]; ok {
-			e.TrackName, e.Color = t.Name, t.Color
+func decorate(st Story, e *Event, tm map[int64]Characters) {
+	if e.CharacterID.Valid {
+		if t, ok := tm[e.CharacterID.Int64]; ok {
+			e.CharacterName, e.Color = t.Name, t.Color
 		}
 	}
 	if e.Color == "" {
@@ -197,17 +197,17 @@ func (a *App) getStory(id int64) (Story, error) {
 	return s, err
 }
 
-func (a *App) listTracks(storyID int64) ([]Track, error) {
+func (a *App) listCharacters(storyID int64) ([]Characters, error) {
 	rows, err := a.db.Query(`SELECT t.id, t.story_id, t.name, t.color,
-		(SELECT COUNT(*) FROM events e WHERE e.track_id = t.id)
-		FROM tracks t WHERE t.story_id = ? ORDER BY t.id`, storyID)
+		(SELECT COUNT(*) FROM events e WHERE e.character_id = t.id)
+		FROM characters t WHERE t.story_id = ? ORDER BY t.id`, storyID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var out []Track
+	var out []Characters
 	for rows.Next() {
-		var t Track
+		var t Characters
 		if err := rows.Scan(&t.ID, &t.StoryID, &t.Name, &t.Color, &t.Count); err != nil {
 			return nil, err
 		}
@@ -216,21 +216,21 @@ func (a *App) listTracks(storyID int64) ([]Track, error) {
 	return out, rows.Err()
 }
 
-func (a *App) listEvents(st Story, tracks []Track) ([]Event, error) {
-	rows, err := a.db.Query(`SELECT id, story_id, track_id, title, notes, starts_at, ends_at
+func (a *App) listEvents(st Story, characters []Characters) ([]Event, error) {
+	rows, err := a.db.Query(`SELECT id, story_id, character_id, title, notes, starts_at, ends_at
 		FROM events WHERE story_id = ?`, st.ID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	tm := map[int64]Track{}
-	for _, t := range tracks {
+	tm := map[int64]Characters{}
+	for _, t := range characters {
 		tm[t.ID] = t
 	}
 	var out []Event
 	for rows.Next() {
 		var e Event
-		if err := rows.Scan(&e.ID, &e.StoryID, &e.TrackID, &e.Title, &e.Notes, &e.StartsAt, &e.EndsAt); err != nil {
+		if err := rows.Scan(&e.ID, &e.StoryID, &e.CharacterID, &e.Title, &e.Notes, &e.StartsAt, &e.EndsAt); err != nil {
 			return nil, err
 		}
 		decorate(st, &e, tm)
@@ -250,8 +250,8 @@ func (a *App) listEvents(st Story, tracks []Track) ([]Event, error) {
 
 func (a *App) getEvent(id int64) (Event, error) {
 	var e Event
-	err := a.db.QueryRow(`SELECT id, story_id, track_id, title, notes, starts_at, ends_at FROM events WHERE id = ?`, id).
-		Scan(&e.ID, &e.StoryID, &e.TrackID, &e.Title, &e.Notes, &e.StartsAt, &e.EndsAt)
+	err := a.db.QueryRow(`SELECT id, story_id, character_id, title, notes, starts_at, ends_at FROM events WHERE id = ?`, id).
+		Scan(&e.ID, &e.StoryID, &e.CharacterID, &e.Title, &e.Notes, &e.StartsAt, &e.EndsAt)
 	return e, err
 }
 
@@ -387,16 +387,16 @@ type LaneRow struct {
 }
 
 type StoryPage struct {
-	Story      Story
-	Tracks     []Track
-	Events     []Event
-	Total      int
-	View       string
-	ViewChips  []Chip
-	TrackChips []Chip
-	Cols       []LaneCol
-	Rows       []LaneRow
-	NextColor  string
+	Story          Story
+	Characters     []Characters
+	Events         []Event
+	Total          int
+	View           string
+	ViewChips      []Chip
+	CharacterChips []Chip
+	Cols           []LaneCol
+	Rows           []LaneRow
+	NextColor      string
 }
 
 func filterEvents(evs []Event, filter string) []Event {
@@ -406,9 +406,9 @@ func filterEvents(evs []Event, filter string) []Event {
 	var out []Event
 	for _, e := range evs {
 		switch {
-		case filter == "none" && !e.TrackID.Valid:
+		case filter == "none" && !e.CharacterID.Valid:
 			out = append(out, e)
-		case e.TrackID.Valid && strconv.FormatInt(e.TrackID.Int64, 10) == filter:
+		case e.CharacterID.Valid && strconv.FormatInt(e.CharacterID.Int64, 10) == filter:
 			out = append(out, e)
 		}
 	}
@@ -421,7 +421,7 @@ func storyHref(id int64, view, filter string) string {
 		q.Set("view", "lanes")
 	}
 	if filter != "" {
-		q.Set("track", filter)
+		q.Set("character", filter)
 	}
 	href := fmt.Sprintf("/stories/%d", id)
 	if len(q) > 0 {
@@ -430,10 +430,10 @@ func storyHref(id int64, view, filter string) string {
 	return href
 }
 
-func buildLanes(tracks []Track, evs []Event, filter string) ([]LaneCol, []LaneRow) {
+func buildLanes(characters []Characters, evs []Event, filter string) ([]LaneCol, []LaneRow) {
 	var cols []LaneCol
 	idx := map[int64]int{}
-	for _, t := range tracks {
+	for _, t := range characters {
 		if filter == "" || filter == strconv.FormatInt(t.ID, 10) {
 			idx[t.ID] = len(cols)
 			cols = append(cols, LaneCol{Name: t.Name, Color: t.Color})
@@ -441,7 +441,7 @@ func buildLanes(tracks []Track, evs []Event, filter string) ([]LaneCol, []LaneRo
 	}
 	unassigned := -1
 	for _, e := range evs {
-		if !e.TrackID.Valid {
+		if !e.CharacterID.Valid {
 			unassigned = len(cols)
 			cols = append(cols, LaneCol{Name: "Unassigned", Color: neutralColor})
 			break
@@ -455,8 +455,8 @@ func buildLanes(tracks []Track, evs []Event, filter string) ([]LaneCol, []LaneRo
 			last = e.key
 		}
 		c := unassigned
-		if e.TrackID.Valid {
-			c = idx[e.TrackID.Int64]
+		if e.CharacterID.Valid {
+			c = idx[e.CharacterID.Int64]
 		}
 		row := &rows[len(rows)-1]
 		row.Cells[c] = append(row.Cells[c], e)
@@ -475,12 +475,12 @@ func (a *App) storyPage(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, err)
 		return
 	}
-	tracks, err := a.listTracks(id)
+	characters, err := a.listCharacters(id)
 	if err != nil {
 		a.fail(w, r, err)
 		return
 	}
-	all, err := a.listEvents(st, tracks)
+	all, err := a.listEvents(st, characters)
 	if err != nil {
 		a.fail(w, r, err)
 		return
@@ -490,38 +490,38 @@ func (a *App) storyPage(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Query().Get("view") == "lanes" {
 		view = "lanes"
 	}
-	filter := r.URL.Query().Get("track")
+	filter := r.URL.Query().Get("character")
 	if _, err := strconv.ParseInt(filter, 10, 64); err != nil && filter != "none" {
 		filter = ""
 	}
 	shown := filterEvents(all, filter)
 
 	p := StoryPage{
-		Story: st, Tracks: tracks, Events: shown, Total: len(all), View: view,
-		NextColor: palette[len(tracks)%len(palette)],
+		Story: st, Characters: characters, Events: shown, Total: len(all), View: view,
+		NextColor: palette[len(characters)%len(palette)],
 	}
 	p.ViewChips = []Chip{
 		{Label: "Timeline", Href: storyHref(id, "list", filter), Active: view == "list"},
 		{Label: "Swimlanes", Href: storyHref(id, "lanes", filter), Active: view == "lanes"},
 	}
-	p.TrackChips = []Chip{{Label: "All tracks", Href: storyHref(id, view, ""), Active: filter == ""}}
-	for _, t := range tracks {
+	p.CharacterChips = []Chip{{Label: "All characters", Href: storyHref(id, view, ""), Active: filter == ""}}
+	for _, t := range characters {
 		f := strconv.FormatInt(t.ID, 10)
-		p.TrackChips = append(p.TrackChips, Chip{Label: t.Name, Color: t.Color, Href: storyHref(id, view, f), Active: filter == f})
+		p.CharacterChips = append(p.CharacterChips, Chip{Label: t.Name, Color: t.Color, Href: storyHref(id, view, f), Active: filter == f})
 	}
 	for _, e := range all {
-		if !e.TrackID.Valid {
-			p.TrackChips = append(p.TrackChips, Chip{Label: "Unassigned", Color: neutralColor, Href: storyHref(id, view, "none"), Active: filter == "none"})
+		if !e.CharacterID.Valid {
+			p.CharacterChips = append(p.CharacterChips, Chip{Label: "Unassigned", Color: neutralColor, Href: storyHref(id, view, "none"), Active: filter == "none"})
 			break
 		}
 	}
 	if view == "lanes" {
-		p.Cols, p.Rows = buildLanes(tracks, shown, filter)
+		p.Cols, p.Rows = buildLanes(characters, shown, filter)
 	}
 	a.render(w, 200, "story", p)
 }
 
-// ---------- track handlers ----------
+// ---------- character handlers ----------
 
 func cleanColor(c string, fallback string) string {
 	c = strings.TrimSpace(c)
@@ -531,7 +531,7 @@ func cleanColor(c string, fallback string) string {
 	return fallback
 }
 
-func (a *App) createTrack(w http.ResponseWriter, r *http.Request) {
+func (a *App) createCharacter(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathID(r)
 	if !ok {
 		http.NotFound(w, r)
@@ -544,9 +544,9 @@ func (a *App) createTrack(w http.ResponseWriter, r *http.Request) {
 	name := strings.TrimSpace(r.FormValue("name"))
 	if name != "" {
 		var n int
-		_ = a.db.QueryRow(`SELECT COUNT(*) FROM tracks WHERE story_id = ?`, id).Scan(&n)
+		_ = a.db.QueryRow(`SELECT COUNT(*) FROM characters WHERE story_id = ?`, id).Scan(&n)
 		color := cleanColor(r.FormValue("color"), palette[n%len(palette)])
-		if _, err := a.db.Exec(`INSERT INTO tracks (story_id, name, color) VALUES (?, ?, ?)`, id, name, color); err != nil {
+		if _, err := a.db.Exec(`INSERT INTO characters (story_id, name, color) VALUES (?, ?, ?)`, id, name, color); err != nil {
 			a.fail(w, r, err)
 			return
 		}
@@ -554,7 +554,7 @@ func (a *App) createTrack(w http.ResponseWriter, r *http.Request) {
 	redirect(w, r, fmt.Sprintf("/stories/%d", id))
 }
 
-func (a *App) updateTrack(w http.ResponseWriter, r *http.Request) {
+func (a *App) updateCharacter(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathID(r)
 	if !ok {
 		http.NotFound(w, r)
@@ -562,7 +562,7 @@ func (a *App) updateTrack(w http.ResponseWriter, r *http.Request) {
 	}
 	var storyID int64
 	var oldName, oldColor string
-	if err := a.db.QueryRow(`SELECT story_id, name, color FROM tracks WHERE id = ?`, id).Scan(&storyID, &oldName, &oldColor); err != nil {
+	if err := a.db.QueryRow(`SELECT story_id, name, color FROM characters WHERE id = ?`, id).Scan(&storyID, &oldName, &oldColor); err != nil {
 		a.fail(w, r, err)
 		return
 	}
@@ -570,7 +570,7 @@ func (a *App) updateTrack(w http.ResponseWriter, r *http.Request) {
 	if name == "" {
 		name = oldName
 	}
-	if _, err := a.db.Exec(`UPDATE tracks SET name = ?, color = ? WHERE id = ?`,
+	if _, err := a.db.Exec(`UPDATE characters SET name = ?, color = ? WHERE id = ?`,
 		name, cleanColor(r.FormValue("color"), oldColor), id); err != nil {
 		a.fail(w, r, err)
 		return
@@ -578,19 +578,19 @@ func (a *App) updateTrack(w http.ResponseWriter, r *http.Request) {
 	redirect(w, r, fmt.Sprintf("/stories/%d", storyID))
 }
 
-func (a *App) deleteTrack(w http.ResponseWriter, r *http.Request) {
+func (a *App) deleteCharacter(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathID(r)
 	if !ok {
 		http.NotFound(w, r)
 		return
 	}
 	var storyID int64
-	if err := a.db.QueryRow(`SELECT story_id FROM tracks WHERE id = ?`, id).Scan(&storyID); err != nil {
+	if err := a.db.QueryRow(`SELECT story_id FROM characters WHERE id = ?`, id).Scan(&storyID); err != nil {
 		a.fail(w, r, err)
 		return
 	}
 	// events keep existing; ON DELETE SET NULL moves them to "Unassigned"
-	if _, err := a.db.Exec(`DELETE FROM tracks WHERE id = ?`, id); err != nil {
+	if _, err := a.db.Exec(`DELETE FROM characters WHERE id = ?`, id); err != nil {
 		a.fail(w, r, err)
 		return
 	}
@@ -601,7 +601,7 @@ func (a *App) deleteTrack(w http.ResponseWriter, r *http.Request) {
 
 type EventForm struct {
 	Story                          Story
-	Tracks                         []Track
+	Characters                     []Characters
 	Event                          Event
 	Start, StartTime, End, EndTime string
 	Error                          string
@@ -630,11 +630,11 @@ func (a *App) readEvent(r *http.Request, st Story) (Event, EventForm, error) {
 		StartsAt: joinTime(st.Mode, f.Start, f.StartTime),
 		EndsAt:   joinTime(st.Mode, f.End, f.EndTime),
 	}
-	if tid, err := strconv.ParseInt(r.FormValue("track"), 10, 64); err == nil && tid > 0 {
+	if tid, err := strconv.ParseInt(r.FormValue("character"), 10, 64); err == nil && tid > 0 {
 		var n int
-		_ = a.db.QueryRow(`SELECT COUNT(*) FROM tracks WHERE id = ? AND story_id = ?`, tid, st.ID).Scan(&n)
+		_ = a.db.QueryRow(`SELECT COUNT(*) FROM characters WHERE id = ? AND story_id = ?`, tid, st.ID).Scan(&n)
 		if n == 1 {
-			ev.TrackID = sql.NullInt64{Int64: tid, Valid: true}
+			ev.CharacterID = sql.NullInt64{Int64: tid, Valid: true}
 		}
 	}
 	f.Event = ev
@@ -669,14 +669,14 @@ func (a *App) newEventForm(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, err)
 		return
 	}
-	tracks, err := a.listTracks(id)
+	characters, err := a.listCharacters(id)
 	if err != nil {
 		a.fail(w, r, err)
 		return
 	}
-	f := EventForm{Story: st, Tracks: tracks, IsNew: true, Action: fmt.Sprintf("/stories/%d/events", id)}
-	if tid, err := strconv.ParseInt(r.URL.Query().Get("track"), 10, 64); err == nil && tid > 0 {
-		f.Event.TrackID = sql.NullInt64{Int64: tid, Valid: true}
+	f := EventForm{Story: st, Characters: characters, IsNew: true, Action: fmt.Sprintf("/stories/%d/events", id)}
+	if tid, err := strconv.ParseInt(r.URL.Query().Get("character"), 10, 64); err == nil && tid > 0 {
+		f.Event.CharacterID = sql.NullInt64{Int64: tid, Valid: true}
 	}
 	f.Start = r.URL.Query().Get("start")
 	a.render(w, 200, "event_form", f)
@@ -695,21 +695,21 @@ func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	ev, f, verr := a.readEvent(r, st)
 	if verr != nil {
-		f.Tracks, _ = a.listTracks(id)
+		f.Characters, _ = a.listCharacters(id)
 		f.Error, f.IsNew, f.Action = verr.Error(), true, fmt.Sprintf("/stories/%d/events", id)
 		a.render(w, http.StatusBadRequest, "event_form", f)
 		return
 	}
-	res, err := a.db.Exec(`INSERT INTO events (story_id, track_id, title, notes, starts_at, ends_at) VALUES (?, ?, ?, ?, ?, ?)`,
-		id, ev.TrackID, ev.Title, ev.Notes, ev.StartsAt, ev.EndsAt)
+	res, err := a.db.Exec(`INSERT INTO events (story_id, character_id, title, notes, starts_at, ends_at) VALUES (?, ?, ?, ?, ?, ?)`,
+		id, ev.CharacterID, ev.Title, ev.Notes, ev.StartsAt, ev.EndsAt)
 	if err != nil {
 		a.fail(w, r, err)
 		return
 	}
 	if r.FormValue("again") != "" {
 		q := url.Values{}
-		if ev.TrackID.Valid {
-			q.Set("track", strconv.FormatInt(ev.TrackID.Int64, 10))
+		if ev.CharacterID.Valid {
+			q.Set("character", strconv.FormatInt(ev.CharacterID.Int64, 10))
 		}
 		if f.Start != "" {
 			q.Set("start", f.Start)
@@ -741,12 +741,12 @@ func (a *App) editEventForm(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, err)
 		return
 	}
-	tracks, err := a.listTracks(st.ID)
+	characters, err := a.listCharacters(st.ID)
 	if err != nil {
 		a.fail(w, r, err)
 		return
 	}
-	f := EventForm{Story: st, Tracks: tracks, Event: ev, Action: fmt.Sprintf("/events/%d", id)}
+	f := EventForm{Story: st, Characters: characters, Event: ev, Action: fmt.Sprintf("/events/%d", id)}
 	if st.IsDate() {
 		f.Start, f.StartTime = splitTime(ev.StartsAt)
 		f.End, f.EndTime = splitTime(ev.EndsAt)
@@ -775,13 +775,13 @@ func (a *App) updateEvent(w http.ResponseWriter, r *http.Request) {
 	ev, f, verr := a.readEvent(r, st)
 	if verr != nil {
 		f.Event.ID = id
-		f.Tracks, _ = a.listTracks(st.ID)
+		f.Characters, _ = a.listCharacters(st.ID)
 		f.Error, f.Action = verr.Error(), fmt.Sprintf("/events/%d", id)
 		a.render(w, http.StatusBadRequest, "event_form", f)
 		return
 	}
-	if _, err := a.db.Exec(`UPDATE events SET track_id = ?, title = ?, notes = ?, starts_at = ?, ends_at = ? WHERE id = ?`,
-		ev.TrackID, ev.Title, ev.Notes, ev.StartsAt, ev.EndsAt, id); err != nil {
+	if _, err := a.db.Exec(`UPDATE events SET character_id = ?, title = ?, notes = ?, starts_at = ?, ends_at = ? WHERE id = ?`,
+		ev.CharacterID, ev.Title, ev.Notes, ev.StartsAt, ev.EndsAt, id); err != nil {
 		a.fail(w, r, err)
 		return
 	}
@@ -833,9 +833,9 @@ func main() {
 	mux.HandleFunc("GET /stories/{id}", app.storyPage)
 	mux.HandleFunc("POST /stories/{id}/edit", app.updateStory)
 	mux.HandleFunc("POST /stories/{id}/delete", app.deleteStory)
-	mux.HandleFunc("POST /stories/{id}/tracks", app.createTrack)
-	mux.HandleFunc("POST /tracks/{id}", app.updateTrack)
-	mux.HandleFunc("POST /tracks/{id}/delete", app.deleteTrack)
+	mux.HandleFunc("POST /stories/{id}/characters", app.createCharacter)
+	mux.HandleFunc("POST /characters/{id}", app.updateCharacter)
+	mux.HandleFunc("POST /characters/{id}/delete", app.deleteCharacter)
 	mux.HandleFunc("GET /stories/{id}/events/new", app.newEventForm)
 	mux.HandleFunc("POST /stories/{id}/events", app.createEvent)
 	mux.HandleFunc("GET /events/{id}/edit", app.editEventForm)

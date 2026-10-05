@@ -10,10 +10,10 @@
     <input name="title" value="{{.Event.Title}}" required autofocus>
   </label>
 
-  <label>Track
-    <select name="track">
+  <label>Character
+    <select name="character">
       <option value="">None</option>
-      {{range .Tracks}}<option value="{{.ID}}"{{if and $.Event.TrackID.Valid (eq $.Event.TrackID.Int64 .ID)}} selected{{end}}>{{.Name}}</option>{{end}}
+      {{range .Characters}}<option value="{{.ID}}"{{if and $.Event.CharacterID.Valid (eq $.Event.CharacterID.Int64 .ID)}} selected{{end}}>{{.Name}}</option>{{end}}
     </select>
   </label>
 

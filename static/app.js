@@ -14,3 +14,13 @@ if (unitRow) {
   document.querySelectorAll('input[name=mode]').forEach((r) => r.addEventListener('change', sync));
   sync();
 }
+
+const charactersearch = document.getElementById('character-search');
+if (charactersearch) {
+  charactersearch.addEventListener('input', () => {
+    const q = charactersearch.value.trim().toLowerCase();
+    document.querySelectorAll('[data-character-name]').forEach((el) => {
+      el.hidden = q !== '' && !el.dataset.characterName.toLowerCase().includes(q);
+    });
+  });
+}
