@@ -1,0 +1,117 @@
+{{define "title"}}{{.Story.Title}} · Story Timeline{{end}}
+{{define "content"}}
+<p class="crumbs"><a href="/">Stories</a> / {{.Story.Title}}</p>
+
+<div class="head">
+  <div>
+    <h1>{{.Story.Title}}</h1>
+    {{if .Story.Description}}<p class="muted pre">{{.Story.Description}}</p>{{end}}
+  </div>
+  <a class="btn primary" href="/stories/{{.Story.ID}}/events/new">+ Add event</a>
+</div>
+
+<div class="toolbar">
+  <div class="chips" role="group" aria-label="View">
+    {{range .ViewChips}}<a class="chip{{if .Active}} active{{end}}" href="{{.Href}}">{{.Label}}</a>{{end}}
+  </div>
+  <div class="chips" role="group" aria-label="Filter by track">
+    {{range .TrackChips}}<a class="chip{{if .Active}} active{{end}}" href="{{.Href}}"{{if .Color}} style="--c: {{.Color}}"{{end}}>{{if .Color}}<i class="dot"></i>{{end}}{{.Label}}</a>{{end}}
+  </div>
+</div>
+
+{{if eq .Total 0}}
+  <div class="empty">
+    <p>No events yet.</p>
+    <p class="muted">Add your first event, and optionally create tracks below (one per character, place or plot thread) to colour-code them.</p>
+  </div>
+{{else if not .Events}}
+  <div class="empty"><p class="muted">No events match this filter.</p></div>
+{{else if eq .View "list"}}
+  <ol class="timeline">
+    {{range .Events}}
+    <li class="tl-item" id="e{{.ID}}" style="--c: {{.Color}}">
+      <div class="card">
+        <div class="when">{{.When}}</div>
+        <h3>{{.Title}}</h3>
+        {{if .TrackName}}<span class="tag"><i class="dot"></i>{{.TrackName}}</span>{{end}}
+        {{if .Notes}}<p class="notes">{{.Notes}}</p>{{end}}
+        <div class="actions">
+          <a href="/events/{{.ID}}/edit">Edit</a>
+          <form method="post" action="/events/{{.ID}}/delete"><button class="link danger" data-confirm="Delete this event?">Delete</button></form>
+        </div>
+      </div>
+    </li>
+    {{end}}
+  </ol>
+{{else}}
+  <div class="lanes-wrap">
+    <table class="lanes">
+      <thead>
+        <tr>
+          <th class="time" scope="col">Time</th>
+          {{range .Cols}}<th scope="col" style="--c: {{.Color}}"><i class="dot"></i>{{.Name}}</th>{{end}}
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Rows}}
+        <tr>
+          <th class="time" scope="row">{{.When}}</th>
+          {{range .Cells}}
+          <td>
+            {{range .}}
+            <div class="card small" id="e{{.ID}}" style="--c: {{.Color}}">
+              {{if .EndsAt}}<div class="when">{{.When}}</div>{{end}}
+              <h3>{{.Title}}</h3>
+              {{if .Notes}}<p class="notes">{{.Notes}}</p>{{end}}
+              <div class="actions">
+                <a href="/events/{{.ID}}/edit">Edit</a>
+                <form method="post" action="/events/{{.ID}}/delete"><button class="link danger" data-confirm="Delete this event?">Delete</button></form>
+              </div>
+            </div>
+            {{end}}
+          </td>
+          {{end}}
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+{{end}}
+
+<details class="panel">
+  <summary>Tracks ({{len .Tracks}})</summary>
+  <p class="muted">Tracks group events by character, place or plot thread, and give each its own colour.</p>
+  {{range .Tracks}}
+  <form class="row" method="post" action="/tracks/{{.ID}}">
+    <input type="color" name="color" value="{{.Color}}" aria-label="Colour for {{.Name}}">
+    <input name="name" value="{{.Name}}" required aria-label="Track name">
+    <span class="muted small">{{.Count}} event{{if ne .Count 1}}s{{end}}</span>
+    <button class="btn" type="submit">Save</button>
+    <button class="btn danger" type="submit" formaction="/tracks/{{.ID}}/delete" formnovalidate data-confirm="Delete this track? Its events are kept and move to Unassigned.">Delete</button>
+  </form>
+  {{end}}
+  <form class="row" method="post" action="/stories/{{.Story.ID}}/tracks">
+    <input type="color" name="color" value="{{.NextColor}}" aria-label="Colour for new track">
+    <input name="name" placeholder="New track name" required aria-label="New track name">
+    <button class="btn primary" type="submit">Add track</button>
+  </form>
+</details>
+
+<details class="panel">
+  <summary>Story settings</summary>
+  <form class="form" method="post" action="/stories/{{.Story.ID}}/edit">
+    <label>Title <input name="title" value="{{.Story.Title}}" required></label>
+    <label>Description <textarea name="description" rows="3">{{.Story.Description}}</textarea></label>
+    {{if .Story.IsDate}}
+    <p class="muted small">Time type: calendar dates (fixed once the story is created).</p>
+    {{else}}
+    <label>Unit label <input name="unit" value="{{.Story.Unit}}" required></label>
+    <p class="muted small">Time type: numbers (fixed once the story is created).</p>
+    {{end}}
+    <div class="buttons"><button class="btn primary" type="submit">Save settings</button></div>
+  </form>
+  <form method="post" action="/stories/{{.Story.ID}}/delete" class="danger-zone">
+    <button class="btn danger" type="submit" data-confirm="Delete this whole story, including all its events and tracks? This cannot be undone.">Delete story</button>
+  </form>
+</details>
+{{end}}

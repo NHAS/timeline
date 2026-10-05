@@ -1,0 +1,36 @@
+{{define "content"}}
+<h1>Your stories</h1>
+
+{{if .Stories}}
+<ul class="story-list">
+  {{range .Stories}}
+  <li class="card">
+    <h3><a href="/stories/{{.ID}}">{{.Title}}</a></h3>
+    {{if .Description}}<p class="muted pre">{{.Description}}</p>{{end}}
+    <p class="meta">{{.EventCount}} event{{if ne .EventCount 1}}s{{end}} · {{if .IsDate}}calendar dates{{else}}numbered by {{.Unit}}{{end}}</p>
+  </li>
+  {{end}}
+</ul>
+{{else}}
+<p class="muted">No stories yet. Create your first one below.</p>
+{{end}}
+
+<h2>New story</h2>
+<form method="post" action="/stories" class="form">
+  <label>Title
+    <input name="title" required placeholder="e.g. The Lighthouse Keeper">
+  </label>
+  <label>Description <small>(optional)</small>
+    <textarea name="description" rows="3"></textarea>
+  </label>
+  <fieldset>
+    <legend>How do you measure time in this story?</legend>
+    <label class="inline"><input type="radio" name="mode" value="date" checked> Calendar dates <small>(real or invented dates, e.g. 14 Mar 1892)</small></label>
+    <label class="inline"><input type="radio" name="mode" value="number"> Numbers <small>(e.g. Day 3, Year 212, Chapter 7)</small></label>
+    <label id="unit-row" hidden>Unit label
+      <input name="unit" value="Day" placeholder="Day, Year, Chapter...">
+    </label>
+  </fieldset>
+  <div class="buttons"><button class="btn primary" type="submit">Create story</button></div>
+</form>
+{{end}}

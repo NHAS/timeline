@@ -1,0 +1,50 @@
+{{define "title"}}{{if .IsNew}}New event{{else}}Edit event{{end}} · {{.Story.Title}}{{end}}
+{{define "content"}}
+<p class="crumbs"><a href="/">Stories</a> / <a href="/stories/{{.Story.ID}}">{{.Story.Title}}</a> / {{if .IsNew}}New event{{else}}Edit event{{end}}</p>
+<h1>{{if .IsNew}}New event{{else}}Edit event{{end}}</h1>
+
+{{if .Error}}<p class="error" role="alert">{{.Error}}</p>{{end}}
+
+<form method="post" action="{{.Action}}" class="form">
+  <label>Title
+    <input name="title" value="{{.Event.Title}}" required autofocus>
+  </label>
+
+  <label>Track
+    <select name="track">
+      <option value="">None</option>
+      {{range .Tracks}}<option value="{{.ID}}"{{if and $.Event.TrackID.Valid (eq $.Event.TrackID.Int64 .ID)}} selected{{end}}>{{.Name}}</option>{{end}}
+    </select>
+  </label>
+
+  {{if .Story.IsDate}}
+  <fieldset>
+    <legend>When</legend>
+    <div class="grid2">
+      <label>Starts <input type="date" name="start" value="{{.Start}}" required></label>
+      <label>Start time <small>(optional)</small> <input type="time" name="start_time" value="{{.StartTime}}"></label>
+      <label>Ends <small>(optional)</small> <input type="date" name="end" value="{{.End}}"></label>
+      <label>End time <small>(optional)</small> <input type="time" name="end_time" value="{{.EndTime}}"></label>
+    </div>
+  </fieldset>
+  {{else}}
+  <fieldset>
+    <legend>When</legend>
+    <div class="grid2">
+      <label>{{.Story.Unit}} (start) <input type="number" step="any" name="start" value="{{.Start}}" required></label>
+      <label>{{.Story.Unit}} (end) <small>(optional)</small> <input type="number" step="any" name="end" value="{{.End}}"></label>
+    </div>
+  </fieldset>
+  {{end}}
+
+  <label>Notes
+    <textarea name="notes" rows="6" placeholder="What happens? Who is there? Anything to remember for the draft.">{{.Event.Notes}}</textarea>
+  </label>
+
+  <div class="buttons">
+    <button class="btn primary" type="submit">Save</button>
+    {{if .IsNew}}<button class="btn" type="submit" name="again" value="1">Save &amp; add another</button>{{end}}
+    <a class="btn ghost" href="/stories/{{.Story.ID}}">Cancel</a>
+  </div>
+</form>
+{{end}}
