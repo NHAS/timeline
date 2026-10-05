@@ -82,7 +82,7 @@
 <details class="panel">
   <summary>Characters ({{len .Characters}})</summary>
   <p class="muted">Characters group events by character and give each its own colour.</p>
-  {{range .Character}}
+  {{range .Characters}}
   <form class="row" data-character-name="{{.Name}}" method="post" action="/characters/{{.ID}}">
     <input type="color" name="color" value="{{.Color}}" aria-label="Colour for {{.Name}}">
     <input name="name" value="{{.Name}}" required aria-label="Character name">

@@ -24,3 +24,39 @@ if (charactersearch) {
     });
   });
 }
+
+const characterFilter = document.getElementById('character-filter');
+const characterSelect = document.getElementById('character-select');
+if (characterFilter && characterSelect) {
+  // Remember the full option list; we rebuild the <select> from it on each keystroke
+  // (hiding <option> elements isn't reliable across browsers).
+  const allOptions = Array.from(characterSelect.options).map((o) => ({ value: o.value, text: o.textContent }));
+ 
+  const applyFilter = () => {
+    const q = characterFilter.value.trim().toLowerCase();
+    const matches = allOptions.filter((o) => o.value !== '' && o.text.toLowerCase().includes(q));
+ 
+    // Keep the current choice, unless you're searching and it no longer matches:
+    // then jump to the first match so Tab/Save picks what you typed.
+    let selected = characterSelect.value;
+    if (q !== '' && !matches.some((o) => o.value === selected) && matches.length > 0) {
+      selected = matches[0].value;
+    }
+ 
+    characterSelect.replaceChildren(
+      ...allOptions
+        .filter((o) => o.value === '' || o.value === selected || matches.includes(o))
+        .map((o) => new Option(o.text, o.value))
+    );
+    characterSelect.value = selected;
+  };
+ 
+  characterFilter.addEventListener('input', applyFilter);
+  // Enter in the search box shouldn't submit the whole form.
+  characterFilter.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      characterSelect.focus();
+    }
+  });
+}

@@ -11,7 +11,8 @@
   </label>
 
   <label>Character
-    <select name="character">
+    <input type="search" id="character-filter" placeholder="Search characters..." aria-label="Search characters" autocomplete="off">
+    <select name="character" id="character-select">
       <option value="">None</option>
       {{range .Characters}}<option value="{{.ID}}"{{if and $.Event.CharacterID.Valid (eq $.Event.CharacterID.Int64 .ID)}} selected{{end}}>{{.Name}}</option>{{end}}
     </select>
