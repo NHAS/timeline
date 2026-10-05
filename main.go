@@ -397,6 +397,10 @@ type StoryPage struct {
 	Cols           []LaneCol
 	Rows           []LaneRow
 	NextColor      string
+
+	CharactersOpen bool   // render the Tracks panel expanded
+	Notice         string // error shown at the top of the Tracks panel
+
 }
 
 func filterEvents(evs []Event, filter string) []Event {
@@ -518,6 +522,13 @@ func (a *App) storyPage(w http.ResponseWriter, r *http.Request) {
 	if view == "lanes" {
 		p.Cols, p.Rows = buildLanes(characters, shown, filter)
 	}
+
+	p.CharactersOpen = r.URL.Query().Get("panel") == "tracks"
+	if r.URL.Query().Get("err") == "date" {
+		p.Notice = "That date isn't valid, so the track wasn't created."
+		p.CharactersOpen = true
+	}
+
 	a.render(w, 200, "story", p)
 }
 
@@ -537,21 +548,68 @@ func (a *App) createCharacter(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	if _, err := a.getStory(id); err != nil {
+	st, err := a.getStory(id)
+	if err != nil {
 		a.fail(w, r, err)
 		return
 	}
 	name := strings.TrimSpace(r.FormValue("name"))
-	if name != "" {
-		var n int
-		_ = a.db.QueryRow(`SELECT COUNT(*) FROM characters WHERE story_id = ?`, id).Scan(&n)
-		color := cleanColor(r.FormValue("color"), palette[n%len(palette)])
-		if _, err := a.db.Exec(`INSERT INTO characters (story_id, name, color) VALUES (?, ?, ?)`, id, name, color); err != nil {
+	if name == "" {
+		redirect(w, r, charactersURL(id, ""))
+		return
+	}
+
+	// Optional first event: validate before touching the database.
+	eventAt := ""
+	if d := strings.TrimSpace(r.FormValue("start")); d != "" {
+		eventAt = joinTime(st.Mode, d, strings.TrimSpace(r.FormValue("start_time")))
+		if _, err := parseKey(st.Mode, eventAt); err != nil {
+			redirect(w, r, charactersURL(id, "date"))
+			return
+		}
+	}
+
+	var n int
+	_ = a.db.QueryRow(`SELECT COUNT(*) FROM characters WHERE story_id = ?`, id).Scan(&n)
+	color := cleanColor(r.FormValue("color"), palette[n%len(palette)])
+
+	tx, err := a.db.Begin()
+	if err != nil {
+		a.fail(w, r, err)
+		return
+	}
+	defer tx.Rollback() // no-op once committed
+	res, err := tx.Exec(`INSERT INTO characters (story_id, name, color) VALUES (?, ?, ?)`, id, name, color)
+	if err != nil {
+		a.fail(w, r, err)
+		return
+	}
+	if eventAt != "" {
+		characterID, _ := res.LastInsertId()
+		title := strings.TrimSpace(r.FormValue("event_title"))
+		if title == "" {
+			title = name + " born"
+		}
+		if _, err := tx.Exec(`INSERT INTO events (story_id, character_id, title, notes, starts_at, ends_at) VALUES (?, ?, ?, '', ?, '')`,
+			id, characterID, title, eventAt); err != nil {
 			a.fail(w, r, err)
 			return
 		}
 	}
-	redirect(w, r, fmt.Sprintf("/stories/%d", id))
+	if err := tx.Commit(); err != nil {
+		a.fail(w, r, err)
+		return
+	}
+	redirect(w, r, charactersURL(id, ""))
+
+}
+
+func charactersURL(storyID int64, errCode string) string {
+	u := fmt.Sprintf("/stories/%d?panel=characters", storyID)
+	if errCode != "" {
+		u += "&err=" + url.QueryEscape(errCode)
+	}
+	return u + "#characters"
 }
 
 func (a *App) updateCharacter(w http.ResponseWriter, r *http.Request) {

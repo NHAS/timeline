@@ -15,6 +15,21 @@ if (unitRow) {
   sync();
 }
 
+// Modal dialogs: any element with data-open-dialog="<id>" opens that <dialog>.
+// Clicking the dark backdrop closes it (Escape and the Cancel button work natively).
+document.addEventListener('click', (e) => {
+  const opener = e.target.closest('[data-open-dialog]');
+  if (!opener) return;
+  const dialog = document.getElementById(opener.dataset.openDialog);
+  if (dialog && typeof dialog.showModal === 'function') dialog.showModal();
+});
+document.querySelectorAll('dialog.modal').forEach((dialog) => {
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) dialog.close();
+  });
+});
+
+
 const charactersearch = document.getElementById('character-search');
 if (charactersearch) {
   charactersearch.addEventListener('input', () => {

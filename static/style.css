@@ -149,3 +149,15 @@ legend { font-weight: 600; font-size: .92rem; padding: 0 6px; }
 }
 
 [hidden] { display: none !important; }
+
+.panel-head { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin: 4px 0 10px; }
+.panel-head p { margin: 0; flex: 1 1 240px; }
+ 
+/* modal dialog */
+dialog.modal {
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); color: var(--text);
+  padding: 0; width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto;
+}
+dialog.modal::backdrop { background: rgba(0, 0, 0, .5); }
+dialog.modal form { padding: 20px; max-width: none; }
+dialog.modal h2 { margin: 0; }

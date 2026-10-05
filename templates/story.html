@@ -79,9 +79,13 @@
   </div>
 {{end}}
 
-<details class="panel">
+<details class="panel" id="characters"{{if .CharactersOpen}} open{{end}}>
   <summary>Characters ({{len .Characters}})</summary>
-  <p class="muted">Characters group events by character and give each its own colour.</p>
+  {{if .Notice}}<p class="error" role="alert">{{.Notice}}</p>{{end}}
+  <div class="panel-head">
+    <p class="muted">Characters group events by character and give each its own colour.</p>
+      <button type="button" class="btn primary" data-open-dialog="add-character-dialog">+ Add character</button>
+  </div>
   {{range .Characters}}
   <form class="row" data-character-name="{{.Name}}" method="post" action="/characters/{{.ID}}">
     <input type="color" name="color" value="{{.Color}}" aria-label="Colour for {{.Name}}">
@@ -90,13 +94,43 @@
     <button class="btn" type="submit">Save</button>
     <button class="btn danger" type="submit" formaction="/characters/{{.ID}}/delete" formnovalidate data-confirm="Delete this character? Its events are kept and move to Unassigned.">Delete</button>
   </form>
-  {{end}}
-  <form class="row" method="post" action="/stories/{{.Story.ID}}/characters">
-    <input type="color" name="color" value="{{.NextColor}}" aria-label="Colour for new characters">
-    <input name="name" placeholder="New character name" required aria-label="New character name">
-    <button class="btn primary" type="submit">Add character</button>
-  </form>
+   {{else}}
+      <p class="muted">No characters yet.</p>
+   {{end}}
+
 </details>
+
+<dialog id="add-character-dialog" class="modal" aria-labelledby="add-character-heading">
+  <form class="form" method="post" action="/stories/{{.Story.ID}}/characters">
+    <h2 id="add-character-heading">Add character</h2>
+    <label>Name
+      <input name="name" required autofocus placeholder="e.g. Mara">
+    </label>
+    <label>Colour
+      <input type="color" name="color" value="{{.NextColor}}">
+    </label>
+    <fieldset>
+      <legend>Born</legend>
+      <p class="muted small">Fill in {{if .Story.IsDate}}a date{{else}}a {{.Story.Unit}}{{end}} and an event is created for this character.</p>
+      {{if .Story.IsDate}}
+      <div class="grid2">
+        <label>Date <input type="date" name="start"></label>
+        <label>Time <small>(optional)</small> <input type="time" name="start_time"></label>
+      </div>
+      {{else}}
+      <label>{{.Story.Unit}} <input type="number" step="any" name="start"></label>
+      {{end}}
+      <label>Event title <small>(optional)</small>
+        <input name="event_title" placeholder="Defaults to: (character name) born">
+      </label>
+    </fieldset>
+    <div class="buttons">
+      <button class="btn primary" type="submit">Add character</button>
+      <button class="btn ghost" type="submit" formmethod="dialog" formnovalidate>Cancel</button>
+    </div>
+  </form>
+</dialog>
+
 
 <details class="panel">
   <summary>Story settings</summary>
