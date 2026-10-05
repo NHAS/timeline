@@ -1,4 +1,4 @@
-module storytimeline
+module github.com/NHAS/timeline
 
 go 1.26.0
 
