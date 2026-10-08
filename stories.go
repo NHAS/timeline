@@ -7,6 +7,18 @@ import (
 	"strings"
 )
 
+type Chip struct {
+	Label, Href, Color string
+	Active             bool
+}
+
+type LaneCol struct{ Name, Color string }
+
+type LaneRow struct {
+	When  string
+	Cells [][]Event
+}
+
 type Story struct {
 	ID          int64
 	Title       string

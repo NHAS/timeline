@@ -55,8 +55,6 @@ var (
 	pageList = []string{"index", "story", "event_form"}
 )
 
-// ---------- models ----------
-
 type App struct{ db *sql.DB }
 
 func openDB(path string) (*sql.DB, error) {
@@ -72,8 +70,6 @@ func openDB(path string) (*sql.DB, error) {
 	return db, nil
 }
 
-// ---------- story handlers ----------
-
 func (a *App) index(w http.ResponseWriter, r *http.Request) {
 	stories, err := a.listStories()
 	if err != nil {
@@ -81,20 +77,6 @@ func (a *App) index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.render(w, http.StatusOK, "index", map[string]any{"Stories": stories})
-}
-
-// ---------- story page (list + swimlane views) ----------
-
-type Chip struct {
-	Label, Href, Color string
-	Active             bool
-}
-
-type LaneCol struct{ Name, Color string }
-
-type LaneRow struct {
-	When  string
-	Cells [][]Event
 }
 
 // ---------- main ----------
