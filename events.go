@@ -163,7 +163,7 @@ func (a *App) newEventForm(w http.ResponseWriter, r *http.Request) {
 		f.Event.CharacterID = sql.NullInt64{Int64: tid, Valid: true}
 	}
 	f.Start = r.URL.Query().Get("start")
-	a.render(w, 200, "event_form", f)
+	a.render(w, http.StatusOK, "event_form", f)
 }
 
 func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
@@ -237,7 +237,7 @@ func (a *App) editEventForm(w http.ResponseWriter, r *http.Request) {
 	} else {
 		f.Start, f.End = ev.StartsAt, ev.EndsAt
 	}
-	a.render(w, 200, "event_form", f)
+	a.render(w, http.StatusOK, "event_form", f)
 }
 
 func (a *App) updateEvent(w http.ResponseWriter, r *http.Request) {

@@ -189,5 +189,5 @@ func (a *App) storyPage(w http.ResponseWriter, r *http.Request) {
 		p.CharactersOpen = true
 	}
 
-	a.render(w, 200, "story", p)
+	a.render(w, http.StatusOK, "story", p)
 }

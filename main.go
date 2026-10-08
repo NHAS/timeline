@@ -80,7 +80,7 @@ func (a *App) index(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, err)
 		return
 	}
-	a.render(w, 200, "index", map[string]any{"Stories": stories})
+	a.render(w, http.StatusOK, "index", map[string]any{"Stories": stories})
 }
 
 // ---------- story page (list + swimlane views) ----------
