@@ -7,7 +7,7 @@ Data is stored in a single SQLite file; the interface runs in your browser.
 
 Requires Go 1.22 or newer (uses the built-in router).
 
-```
+```bash
 go mod tidy      # downloads the pure-Go SQLite driver (no C compiler needed)
 go run .
 ```
@@ -16,7 +16,7 @@ Then open http://127.0.0.1:8080
 
 Options:
 
-```
+```bash
 go run . -addr 127.0.0.1:9000 -db my-stories.db
 ```
 
@@ -35,7 +35,7 @@ The app has no login, so it listens on localhost only by default. Don't expose i
 
 ## Files
 
-```
+```bash
 main.go              server, database access, handlers
 templates/*.html     page templates (embedded in the binary)
 static/              CSS and a little JavaScript (embedded in the binary)
