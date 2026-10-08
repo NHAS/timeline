@@ -18,7 +18,6 @@
     </select>
   </label>
 
-  {{if .Story.IsDate}}
   <fieldset>
     <legend>When</legend>
     <div class="grid2">
@@ -29,15 +28,6 @@
       <label>Ends <small>(optional)</small> <input type="date" name="end" value="{{.End}}"></label>
     </div>
   </fieldset>
-  {{else}}
-  <fieldset>
-    <legend>When</legend>
-    <div class="grid2">
-      <label>{{.Story.Unit}} (start) <input type="number" step="any" name="start" value="{{.Start}}" required></label>
-      <label>{{.Story.Unit}} (end) <small>(optional)</small> <input type="number" step="any" name="end" value="{{.End}}"></label>
-    </div>
-  </fieldset>
-  {{end}}
 
   <label>Notes
     <textarea name="notes" rows="6" placeholder="What happens? Who is there? Anything to remember for the draft.">{{.Event.Notes}}</textarea>

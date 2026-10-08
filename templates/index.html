@@ -7,7 +7,7 @@
   <li class="card">
     <h3><a href="/stories/{{.ID}}">{{.Title}}</a></h3>
     {{if .Description}}<p class="muted pre">{{.Description}}</p>{{end}}
-    <p class="meta">{{.EventCount}} event{{if ne .EventCount 1}}s{{end}} · {{if .IsDate}}calendar dates{{else}}numbered by {{.Unit}}{{end}}</p>
+    <p class="meta">{{.EventCount}} event{{if ne .EventCount 1}}s{{end}} · dates</p>
   </li>
   {{end}}
 </ul>

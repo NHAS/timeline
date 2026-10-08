@@ -133,12 +133,6 @@
   <form class="form" method="post" action="/stories/{{.Story.ID}}/edit">
     <label>Title <input name="title" value="{{.Story.Title}}" required></label>
     <label>Description <textarea name="description" rows="3">{{.Story.Description}}</textarea></label>
-    {{if .Story.IsDate}}
-    <p class="muted small">Time type: calendar dates (fixed once the story is created).</p>
-    {{else}}
-    <label>Unit label <input name="unit" value="{{.Story.Unit}}" required></label>
-    <p class="muted small">Time type: numbers (fixed once the story is created).</p>
-    {{end}}
     <div class="buttons"><button class="btn primary" type="submit">Save settings</button></div>
   </form>
   <form method="post" action="/stories/{{.Story.ID}}/delete" class="danger-zone">
