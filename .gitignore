@@ -2,3 +2,4 @@ timeline
 *.db
 *.db-shm
 *.db-wal
+timeline.exe
