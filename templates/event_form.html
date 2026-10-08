@@ -22,10 +22,11 @@
   <fieldset>
     <legend>When</legend>
     <div class="grid2">
+      <label>Start Age <input type="number" name="start_age"></label>
       <label>Starts <input type="date" name="start" value="{{.Start}}" required></label>
-      <label>Start time <small>(optional)</small> <input type="time" name="start_time" value="{{.StartTime}}"></label>
+
+      <label>Ends Age <input type="number" name="end_age"></label>
       <label>Ends <small>(optional)</small> <input type="date" name="end" value="{{.End}}"></label>
-      <label>End time <small>(optional)</small> <input type="time" name="end_time" value="{{.EndTime}}"></label>
     </div>
   </fieldset>
   {{else}}

@@ -23,12 +23,8 @@ type Story struct {
 	ID          int64
 	Title       string
 	Description string
-	Mode        string
-	Unit        string
 	EventCount  int
 }
-
-func (s Story) IsDate() bool { return s.Mode != "number" }
 
 type StoryPage struct {
 	Story          Story
@@ -87,14 +83,9 @@ func (a *App) updateStory(w http.ResponseWriter, r *http.Request) {
 	if title == "" {
 		title = st.Title
 	}
-	unit := st.Unit
-	if st.Mode == "number" {
-		if u := strings.TrimSpace(r.FormValue("unit")); u != "" {
-			unit = u
-		}
-	}
-	if _, err := a.db.Exec(`UPDATE stories SET title = ?, description = ?, unit = ? WHERE id = ?`,
-		title, strings.TrimSpace(r.FormValue("description")), unit, id); err != nil {
+
+	if _, err := a.db.Exec(`UPDATE stories SET title = ?, description = ? WHERE id = ?`,
+		title, strings.TrimSpace(r.FormValue("description")), id); err != nil {
 		a.fail(w, r, err)
 		return
 	}
@@ -115,7 +106,7 @@ func (a *App) deleteStory(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) listStories() ([]Story, error) {
-	rows, err := a.db.Query(`SELECT s.id, s.title, s.description, s.mode, s.unit,
+	rows, err := a.db.Query(`SELECT s.id, s.title, s.description,
 		(SELECT COUNT(*) FROM events e WHERE e.story_id = s.id)
 		FROM stories s ORDER BY s.created_at DESC, s.id DESC`)
 	if err != nil {
@@ -125,7 +116,7 @@ func (a *App) listStories() ([]Story, error) {
 	var out []Story
 	for rows.Next() {
 		var s Story
-		if err := rows.Scan(&s.ID, &s.Title, &s.Description, &s.Mode, &s.Unit, &s.EventCount); err != nil {
+		if err := rows.Scan(&s.ID, &s.Title, &s.Description, &s.EventCount); err != nil {
 			return nil, err
 		}
 		out = append(out, s)
@@ -135,8 +126,8 @@ func (a *App) listStories() ([]Story, error) {
 
 func (a *App) getStory(id int64) (Story, error) {
 	var s Story
-	err := a.db.QueryRow(`SELECT id, title, description, mode, unit FROM stories WHERE id = ?`, id).
-		Scan(&s.ID, &s.Title, &s.Description, &s.Mode, &s.Unit)
+	err := a.db.QueryRow(`SELECT id, title, description FROM stories WHERE id = ?`, id).
+		Scan(&s.ID, &s.Title, &s.Description)
 	return s, err
 }
 

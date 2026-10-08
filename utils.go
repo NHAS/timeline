@@ -53,41 +53,43 @@ func redirect(w http.ResponseWriter, r *http.Request, to string) {
 
 // ---------- time handling ----------
 
-// parseKey turns a stored time string into a sortable number.
-func parseKey(mode, s string) (float64, error) {
-	s = strings.TrimSpace(s)
-	if mode == "number" {
-		return strconv.ParseFloat(s, 64)
+// parseTime turns a stored time string into a sortable number.
+func parseTime(s string) (int64, error) {
+
+	parts := strings.SplitN(s, "-", 2)
+	if len(parts) != 2 {
+		return 0, fmt.Errorf("invalid time, no starting age: %q", s)
 	}
+
+	if _, err := strconv.ParseInt(parts[0], 10, 64); err != nil {
+		return 0, fmt.Errorf("invalid time, starting age could not be parsed as number: %w", err)
+	}
+
 	for _, layout := range []string{"2006-01-02 15:04", "2006-01-02"} {
-		if t, err := time.Parse(layout, s); err == nil {
-			return float64(t.Unix()), nil
+		if t, err := time.Parse(layout, parts[1]); err == nil {
+			return strconv.ParseInt(fmt.Sprintf("%s%d", parts[0], t.Unix()), 10, 64)
 		}
 	}
 	return 0, fmt.Errorf("%q is not a valid date", s)
 }
 
-func formatTime(st Story, s string) string {
-	if st.Mode == "number" {
-		return strings.TrimSpace(st.Unit + " " + s)
+func formatTime(s string) string {
+
+	parts := strings.SplitN(s, "-", 2)
+	if len(parts) != 2 {
+		return ""
 	}
-	if t, err := time.Parse("2006-01-02 15:04", s); err == nil {
-		return t.Format("2 Jan 2006, 15:04")
+
+	if t, err := time.Parse("2006-01-02 15:04", parts[1]); err == nil {
+		return "Age " + parts[0] + " " + t.Format("2 Jan 2006, 15:04")
 	}
-	if t, err := time.Parse("2006-01-02", s); err == nil {
-		return t.Format("2 Jan 2006")
+	if t, err := time.Parse("2006-01-02", parts[1]); err == nil {
+		return "Age " + parts[0] + " " + t.Format("2 Jan 2006")
 	}
 	return s
 }
 
-func joinTime(mode, date, clock string) string {
-	if mode == "date" && date != "" && clock != "" {
-		return date + " " + clock
-	}
-	return date
-}
-
-func decorate(st Story, e *Event, tm map[int64]Characters) {
+func decorate(e *Event, tm map[int64]Characters) {
 	if e.CharacterID.Valid {
 		if t, ok := tm[e.CharacterID.Int64]; ok {
 			e.CharacterName, e.Color = t.Name, t.Color
@@ -96,12 +98,12 @@ func decorate(st Story, e *Event, tm map[int64]Characters) {
 	if e.Color == "" {
 		e.Color = neutralColor
 	}
-	e.Start = formatTime(st, e.StartsAt)
+	e.Start = formatTime(e.StartsAt)
 	e.When = e.Start
 	if e.EndsAt != "" {
-		e.When += " → " + formatTime(st, e.EndsAt)
+		e.When += " → " + formatTime(e.EndsAt)
 	}
-	e.key, _ = parseKey(st.Mode, e.StartsAt)
+	e.key, _ = parseTime(e.StartsAt)
 }
 
 func storyHref(id int64, view, filter string) string {
@@ -137,7 +139,7 @@ func buildLanes(characters []Characters, evs []Event, filter string) ([]LaneCol,
 		}
 	}
 	var rows []LaneRow
-	var last float64
+	var last int64
 	for i, e := range evs {
 		if i == 0 || e.key != last {
 			rows = append(rows, LaneRow{When: e.Start, Cells: make([][]Event, len(cols))})

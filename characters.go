@@ -21,8 +21,8 @@ func (a *App) createCharacter(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	st, err := a.getStory(id)
-	if err != nil {
+
+	if _, err := a.getStory(id); err != nil {
 		a.fail(w, r, err)
 		return
 	}
@@ -33,13 +33,11 @@ func (a *App) createCharacter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Optional first event: validate before touching the database.
-	eventAt := ""
-	if d := strings.TrimSpace(r.FormValue("start")); d != "" {
-		eventAt = joinTime(st.Mode, d, strings.TrimSpace(r.FormValue("start_time")))
-		if _, err := parseKey(st.Mode, eventAt); err != nil {
-			redirect(w, r, charactersURL(id, "date"))
-			return
-		}
+	eventAt := strings.TrimSpace(r.FormValue("start"))
+	if _, err := parseTime(eventAt); err != nil {
+
+		redirect(w, r, charactersURL(id, "date"))
+		return
 	}
 
 	var n int

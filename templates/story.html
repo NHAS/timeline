@@ -111,15 +111,11 @@
     </label>
     <fieldset>
       <legend>Born</legend>
-      <p class="muted small">Fill in {{if .Story.IsDate}}a date{{else}}a {{.Story.Unit}}{{end}} and an event is created for this character.</p>
-      {{if .Story.IsDate}}
+      <p class="muted small">Fill in a date and an event is created for this character.</p>
       <div class="grid2">
+        <label>Age <input type="number" name="age"></label>
         <label>Date <input type="date" name="start"></label>
-        <label>Time <small>(optional)</small> <input type="time" name="start_time"></label>
       </div>
-      {{else}}
-      <label>{{.Story.Unit}} <input type="number" step="any" name="start"></label>
-      {{end}}
       <label>Event title <small>(optional)</small>
         <input name="event_title" placeholder="Defaults to: (character name) born">
       </label>
