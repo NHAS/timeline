@@ -38,8 +38,8 @@ type StoryPage struct {
 	Rows           []LaneRow
 	NextColor      string
 
-	CharactersOpen bool   // render the Tracks panel expanded
-	Notice         string // error shown at the top of the Tracks panel
+	CharactersOpen bool   // render the characters panel expanded
+	Notice         string // error shown at the top of the characters panel
 
 }
 
@@ -178,9 +178,9 @@ func (a *App) storyPage(w http.ResponseWriter, r *http.Request) {
 		p.Cols, p.Rows = buildLanes(characters, shown, filter)
 	}
 
-	p.CharactersOpen = r.URL.Query().Get("panel") == "tracks"
+	p.CharactersOpen = r.URL.Query().Get("panel") == "characters"
 	if r.URL.Query().Get("err") == "date" {
-		p.Notice = "That date isn't valid, so the track wasn't created."
+		p.Notice = "That date isn't valid, so the character wasn't created."
 		p.CharactersOpen = true
 	}
 

@@ -81,10 +81,10 @@ func formatTime(s string) string {
 	}
 
 	if t, err := time.Parse("2006-01-02 15:04", parts[1]); err == nil {
-		return "Age " + parts[0] + " " + t.Format("2 Jan 2006, 15:04")
+		return "Age " + parts[0] + ", " + t.Format("2 Jan 2006, 15:04")
 	}
 	if t, err := time.Parse("2006-01-02", parts[1]); err == nil {
-		return "Age " + parts[0] + " " + t.Format("2 Jan 2006")
+		return "Age " + parts[0] + ", " + t.Format("2 Jan 2006")
 	}
 	return s
 }

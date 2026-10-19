@@ -84,28 +84,32 @@ func filterEvents(evs []Event, filter string) []Event {
 }
 
 type EventForm struct {
-	Story                          Story
-	Characters                     []Characters
-	Event                          Event
-	Start, StartTime, End, EndTime string
-	Error                          string
-	IsNew                          bool
-	Action                         string
+	Story                                Story
+	Characters                           []Characters
+	Event                                Event
+	StartAge, StartTime, EndAge, EndTime string
+	Error                                string
+	IsNew                                bool
+	Action                               string
 }
 
 // readEvent parses and validates the submitted form.
 func (a *App) readEvent(r *http.Request, st Story) (Event, EventForm, error) {
 	f := EventForm{
 		Story: st,
-		Start: strings.TrimSpace(r.FormValue("start")),
-		End:   strings.TrimSpace(r.FormValue("end")),
+
+		StartTime: strings.TrimSpace(r.FormValue("start")),
+		EndTime:   strings.TrimSpace(r.FormValue("end")),
+
+		StartAge: strings.TrimSpace(r.FormValue("start_age")),
+		EndAge:   strings.TrimSpace(r.FormValue("end_age")),
 	}
 	ev := Event{
 		StoryID:  st.ID,
 		Title:    strings.TrimSpace(r.FormValue("title")),
 		Notes:    strings.TrimSpace(r.FormValue("notes")),
-		StartsAt: f.Start,
-		EndsAt:   f.End,
+		StartsAt: f.StartAge + "-" + f.StartTime,
+		EndsAt:   f.EndAge + "-" + f.EndTime,
 	}
 	if tid, err := strconv.ParseInt(r.FormValue("character"), 10, 64); err == nil && tid > 0 {
 		var n int
@@ -121,12 +125,12 @@ func (a *App) readEvent(r *http.Request, st Story) (Event, EventForm, error) {
 	}
 	startKey, err := parseTime(ev.StartsAt)
 	if err != nil {
-		return ev, f, errors.New("The start time isn't valid.")
+		return ev, f, fmt.Errorf("The start time isn't valid: %w", err)
 	}
 	if ev.EndsAt != "" {
 		endKey, err := parseTime(ev.EndsAt)
 		if err != nil {
-			return ev, f, errors.New("The end time isn't valid.")
+			return ev, f, fmt.Errorf("The end time isn't valid: %w", err)
 		}
 		if endKey < startKey {
 			return ev, f, errors.New("The end can't be before the start.")
@@ -155,7 +159,9 @@ func (a *App) newEventForm(w http.ResponseWriter, r *http.Request) {
 	if tid, err := strconv.ParseInt(r.URL.Query().Get("character"), 10, 64); err == nil && tid > 0 {
 		f.Event.CharacterID = sql.NullInt64{Int64: tid, Valid: true}
 	}
-	f.Start = r.URL.Query().Get("start")
+	f.StartAge = r.URL.Query().Get("start_age")
+	f.StartTime = r.URL.Query().Get("start")
+
 	a.render(w, http.StatusOK, "event_form", f)
 }
 
@@ -188,8 +194,9 @@ func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
 		if ev.CharacterID.Valid {
 			q.Set("character", strconv.FormatInt(ev.CharacterID.Int64, 10))
 		}
-		if f.Start != "" {
-			q.Set("start", f.Start)
+		if f.StartTime != "" {
+			q.Set("start", f.StartTime)
+			q.Set("start_age", f.StartAge)
 		}
 		to := fmt.Sprintf("/stories/%d/events/new", id)
 		if len(q) > 0 {
@@ -223,13 +230,44 @@ func (a *App) editEventForm(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, err)
 		return
 	}
+
+	var (
+		startAge  string
+		startTime string
+
+		endAge  string
+		endTime string
+	)
+
+	if ev.StartsAt != "" {
+		startParts := strings.SplitN(ev.StartsAt, "-", 2)
+
+		if len(startParts) == 2 {
+			startAge = startParts[0]
+			startTime = startParts[1]
+		}
+	}
+
+	if ev.EndsAt != "" {
+		endParts := strings.SplitN(ev.EndsAt, "-", 2)
+
+		if len(endParts) == 2 {
+			endAge = endParts[0]
+			endTime = endParts[1]
+		}
+	}
+
 	f := EventForm{
 		Story:      st,
 		Characters: characters,
 		Event:      ev,
 		Action:     fmt.Sprintf("/events/%d", id),
-		Start:      ev.StartsAt,
-		End:        ev.EndsAt,
+
+		StartAge:  startAge,
+		StartTime: startTime,
+
+		EndAge:  endAge,
+		EndTime: endTime,
 	}
 
 	a.render(w, http.StatusOK, "event_form", f)

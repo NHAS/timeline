@@ -32,9 +32,9 @@ func (a *App) createCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Optional first event: validate before touching the database.
-	eventAt := strings.TrimSpace(r.FormValue("start"))
-	if _, err := parseTime(eventAt); err != nil {
+	date := strings.TrimSpace(r.FormValue("start_age")) + "-" + strings.TrimSpace(r.FormValue("start_time"))
+
+	if _, err := parseTime(date); err != nil {
 
 		redirect(w, r, charactersURL(id, "date"))
 		return
@@ -55,14 +55,14 @@ func (a *App) createCharacter(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, err)
 		return
 	}
-	if eventAt != "" {
+	if date != "" {
 		characterID, _ := res.LastInsertId()
 		title := strings.TrimSpace(r.FormValue("event_title"))
 		if title == "" {
 			title = name + " born"
 		}
 		if _, err := tx.Exec(`INSERT INTO events (story_id, character_id, title, notes, starts_at, ends_at) VALUES (?, ?, ?, '', ?, '')`,
-			id, characterID, title, eventAt); err != nil {
+			id, characterID, title, date); err != nil {
 			a.fail(w, r, err)
 			return
 		}
