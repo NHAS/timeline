@@ -93,11 +93,6 @@ type EventForm struct {
 	Action                         string
 }
 
-func splitTime(s string) (string, string) {
-	d, t, _ := strings.Cut(s, " ")
-	return d, t
-}
-
 // readEvent parses and validates the submitted form.
 func (a *App) readEvent(r *http.Request, st Story) (Event, EventForm, error) {
 	f := EventForm{
