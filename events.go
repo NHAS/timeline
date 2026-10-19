@@ -60,6 +60,13 @@ func (a *App) listEvents(st Story, characters []Characters) ([]Event, error) {
 	return out, nil
 }
 
+func (a *App) getLastEvent() (Event, error) {
+	var e Event
+	err := a.db.QueryRow(`SELECT id, story_id, character_id, title, notes, starts_at, ends_at FROM events order by id desc LIMIT 1`).
+		Scan(&e.ID, &e.StoryID, &e.CharacterID, &e.Title, &e.Notes, &e.StartsAt, &e.EndsAt)
+	return e, err
+}
+
 func (a *App) getEvent(id int64) (Event, error) {
 	var e Event
 	err := a.db.QueryRow(`SELECT id, story_id, character_id, title, notes, starts_at, ends_at FROM events WHERE id = ?`, id).
@@ -109,8 +116,12 @@ func (a *App) readEvent(r *http.Request, st Story) (Event, EventForm, error) {
 		Title:    strings.TrimSpace(r.FormValue("title")),
 		Notes:    strings.TrimSpace(r.FormValue("notes")),
 		StartsAt: f.StartAge + "-" + f.StartTime,
-		EndsAt:   f.EndAge + "-" + f.EndTime,
 	}
+
+	if f.EndAge != "" || f.EndTime != "" {
+		ev.EndsAt = f.EndAge + "-" + f.EndTime
+	}
+
 	if tid, err := strconv.ParseInt(r.FormValue("character"), 10, 64); err == nil && tid > 0 {
 		var n int
 		_ = a.db.QueryRow(`SELECT COUNT(*) FROM characters WHERE id = ? AND story_id = ?`, tid, st.ID).Scan(&n)
@@ -155,9 +166,31 @@ func (a *App) newEventForm(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, err)
 		return
 	}
-	f := EventForm{Story: st, Characters: characters, IsNew: true, Action: fmt.Sprintf("/stories/%d/events", id)}
+
+	f := EventForm{
+		Story:      st,
+		Characters: characters,
+		IsNew:      true,
+		Action:     fmt.Sprintf("/stories/%d/events", id),
+	}
+
+	event, err := a.getLastEvent()
+	if err == nil {
+		if _, err := parseTime(event.StartsAt); err == nil {
+			timeParts := strings.SplitN(event.StartsAt, "-", 2)
+			if len(timeParts) == 2 {
+				f.StartAge = timeParts[0]
+			}
+		}
+	}
+
 	if tid, err := strconv.ParseInt(r.URL.Query().Get("character"), 10, 64); err == nil && tid > 0 {
-		f.Event.CharacterID = sql.NullInt64{Int64: tid, Valid: true}
+
+		f.Event.CharacterID = sql.NullInt64{
+			Int64: tid,
+			Valid: true,
+		}
+
 	}
 	f.StartAge = r.URL.Query().Get("start_age")
 	f.StartTime = r.URL.Query().Get("start")

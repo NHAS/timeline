@@ -39,6 +39,7 @@ type StoryPage struct {
 	NextColor      string
 
 	CharactersOpen bool   // render the characters panel expanded
+	StartAge       string // Populate the characters start age from last added event for convience
 	Notice         string // error shown at the top of the characters panel
 
 }
@@ -159,6 +160,17 @@ func (a *App) storyPage(w http.ResponseWriter, r *http.Request) {
 		Story: st, Characters: characters, Events: shown, Total: len(all), View: view,
 		NextColor: palette[len(characters)%len(palette)],
 	}
+
+	event, err := a.getLastEvent()
+	if err == nil {
+		if _, err := parseTime(event.StartsAt); err == nil {
+			timeParts := strings.SplitN(event.StartsAt, "-", 2)
+			if len(timeParts) == 2 {
+				p.StartAge = timeParts[0]
+			}
+		}
+	}
+
 	p.ViewChips = []Chip{
 		{Label: "Timeline", Href: storyHref(id, "list", filter), Active: view == "list"},
 		{Label: "Swimlanes", Href: storyHref(id, "lanes", filter), Active: view == "lanes"},
