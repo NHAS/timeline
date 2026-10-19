@@ -49,17 +49,9 @@ func (a *App) createStory(w http.ResponseWriter, r *http.Request) {
 		redirect(w, r, "/")
 		return
 	}
-	mode := "date"
-	unit := ""
-	if r.FormValue("mode") == "number" {
-		mode = "number"
-		unit = strings.TrimSpace(r.FormValue("unit"))
-		if unit == "" {
-			unit = "Day"
-		}
-	}
-	res, err := a.db.Exec(`INSERT INTO stories (title, description, mode, unit) VALUES (?, ?, ?, ?)`,
-		title, strings.TrimSpace(r.FormValue("description")), mode, unit)
+
+	res, err := a.db.Exec(`INSERT INTO stories (title, description) VALUES (?, ?)`,
+		title, strings.TrimSpace(r.FormValue("description")))
 	if err != nil {
 		a.fail(w, r, err)
 		return

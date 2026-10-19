@@ -23,8 +23,6 @@ CREATE TABLE IF NOT EXISTS stories (
 	id          INTEGER PRIMARY KEY AUTOINCREMENT,
 	title       TEXT NOT NULL,
 	description TEXT NOT NULL DEFAULT '',
-	mode        TEXT NOT NULL DEFAULT 'date',   -- 'date' (calendar) or 'number' (e.g. Day 12)
-	unit        TEXT NOT NULL DEFAULT '',       -- label for number mode: Day, Year, Chapter...
 	created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE IF NOT EXISTS characters (

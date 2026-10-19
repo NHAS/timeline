@@ -4,16 +4,6 @@ document.addEventListener('click', (e) => {
   if (el && !window.confirm(el.dataset.confirm)) e.preventDefault();
 });
 
-// New-story form: only show the unit field for number-based timelines.
-const unitRow = document.getElementById('unit-row');
-if (unitRow) {
-  const sync = () => {
-    const checked = document.querySelector('input[name=mode]:checked');
-    unitRow.hidden = !(checked && checked.value === 'number');
-  };
-  document.querySelectorAll('input[name=mode]').forEach((r) => r.addEventListener('change', sync));
-  sync();
-}
 
 // Modal dialogs: any element with data-open-dialog="<id>" opens that <dialog>.
 // Clicking the dark backdrop closes it (Escape and the Cancel button work natively).
